@@ -12,6 +12,7 @@ build-dir = "book/build"
 [output.html]
 default-theme = "rust"
 preferred-dark-theme = "navy"
+git-repository-url = "https://github.com/giridharsalana/laykit"
 site-url = "https://giridharsalana.github.io/laykit/"
 cname = "giridharsalana.github.io"
 additional-css = ["book/theme/custom.css"]
