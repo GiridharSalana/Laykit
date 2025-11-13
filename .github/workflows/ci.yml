@@ -86,10 +86,35 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Generate docs
-        run: cargo doc --no-deps --all-features
+        run: cargo doc --no-deps --all-features --document-private-items
 
       - name: Check for broken links
         run: cargo doc --no-deps --all-features 2>&1 | grep -i "warning.*intra-doc" && exit 1 || exit 0
+
+      - name: Prepare docs for GitHub Pages
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          cat > target/doc/index.html <<'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="utf-8">
+              <meta http-equiv="refresh" content="0; url=gds_oas/index.html">
+              <title>Redirecting to gds_oas documentation</title>
+          </head>
+          <body>
+              <p>Redirecting to <a href="gds_oas/index.html">gds_oas documentation</a>...</p>
+          </body>
+          </html>
+          EOF
+          touch target/doc/.nojekyll
+
+      - name: Upload docs artifact
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-artifact@v3
+        with:
+          name: documentation
+          path: target/doc
 
   build-binaries:
     name: Build Release Binaries
@@ -163,6 +188,37 @@ jobs:
           path: |
             ${{ matrix.artifact_name }}.tar.gz
             ${{ matrix.artifact_name }}.zip
+
+  deploy-docs:
+    name: Deploy Documentation to GitHub Pages
+    needs: docs
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download docs artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: documentation
+          path: docs
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
   release:
     name: Create GitHub Release
