@@ -1,11 +1,11 @@
-// Example demonstrating basic usage of the LayKit library
+// Example demonstrating basic usage of the laykit library
 
 use laykit::converter::{gdsii_to_oasis, oasis_to_gdsii};
 use laykit::gdsii::{Boundary, GDSElement, GDSIIFile, GDSStructure, GDSTime, GPath};
 use laykit::oasis::{OASISCell, OASISElement, OASISFile, Polygon, Rectangle};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("=== LayKit Library Example ===\n");
+    println!("=== laykit Library Example ===\n");
 
     // Create a GDSII file
     println!("1. Creating GDSII file...");
