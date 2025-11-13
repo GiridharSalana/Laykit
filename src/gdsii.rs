@@ -719,7 +719,8 @@ impl GDSIIFile {
     }
 
     fn parse_xy(data: &[u8]) -> Result<Vec<(i32, i32)>, Box<dyn std::error::Error>> {
-        if !data.len().is_multiple_of(8) {
+        #[allow(unknown_lints, clippy::manual_is_multiple_of)]
+        if data.len() % 8 != 0 {
             return Err("Invalid XY data length".into());
         }
 
