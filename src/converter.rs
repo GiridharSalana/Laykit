@@ -316,4 +316,3 @@ fn calculate_rectangle_bounds(points: &[(i32, i32)]) -> (i32, i32, i32, i32) {
 
     (x_min, y_min, x_max - x_min, y_max - y_min)
 }
-
