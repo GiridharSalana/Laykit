@@ -75,37 +75,9 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-  docs:
-    name: Documentation
-    needs: fmt
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Generate docs
-        run: cargo doc --no-deps --all-features --document-private-items
-
-      - name: Check for broken links
-        run: cargo doc --no-deps --all-features 2>&1 | grep -i "warning.*intra-doc" && exit 1 || exit 0
-
-      - name: Prepare docs for GitHub Pages
-        run: |
-          # Create .nojekyll file to disable Jekyll processing
-          touch target/doc/gds_oas/.nojekyll
-
-      - name: Upload docs artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: documentation
-          path: target/doc/gds_oas
-
   build-binaries:
     name: Build Release Binaries
-    needs: docs
+    needs: fmt
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ${{ matrix.os }}
     strategy:
@@ -176,9 +148,37 @@ jobs:
             ${{ matrix.artifact_name }}.tar.gz
             ${{ matrix.artifact_name }}.zip
 
+  docs:
+    name: Documentation
+    needs: build-binaries
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Generate docs
+        run: cargo doc --no-deps --all-features --document-private-items
+
+      - name: Check for broken links
+        run: cargo doc --no-deps --all-features 2>&1 | grep -i "warning.*intra-doc" && exit 1 || exit 0
+
+      - name: Prepare docs for GitHub Pages
+        run: |
+          # Create .nojekyll file to disable Jekyll processing
+          touch target/doc/gds_oas/.nojekyll
+
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: target/doc/gds_oas
+
   deploy-docs:
     name: Deploy Documentation to GitHub Pages
-    needs: build-binaries
+    needs: docs
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     permissions:
