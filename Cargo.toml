@@ -1,0 +1,31 @@
+[package]
+name = "gds_oas"
+version = "0.1.0"
+edition = "2021"
+author = "Giridhar Salana"
+description = "Production-ready Rust library for GDSII and OASIS IC layout file formats"
+readme = "README.md"
+repository = "https://github.com/GiridharSalana/gds_oas"
+license = "MIT"
+keywords = ["gdsii", "oasis", "ic-layout", "vlsi", "eda"]
+categories = ["parser-implementations", "encoding"]
+
+[dependencies]
+
+[dev-dependencies]
+
+[lib]
+name = "gds_oas"
+path = "src/lib.rs"
+
+[[example]]
+name = "gdsii_only"
+path = "examples/gdsii_only.rs"
+
+[[example]]
+name = "oasis_only"
+path = "examples/oasis_only.rs"
+
+[[example]]
+name = "basic_usage"
+path = "examples/basic_usage.rs"
