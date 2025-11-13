@@ -186,19 +186,13 @@ jobs:
           cp -r target/doc/* target/pages/api/
           
           # Create redirect from api/index.html to api/laykit/index.html
-          cat > target/pages/api/index.html << 'EOHTML'
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>LayKit API Documentation</title>
-    <meta http-equiv="refresh" content="0; url=laykit/index.html">
-</head>
-<body>
-<p>Redirecting to <a href="laykit/index.html">API documentation</a>...</p>
-</body>
-</html>
-EOHTML
+          echo '<!DOCTYPE html>' > target/pages/api/index.html
+          echo '<html><head><meta charset="utf-8">' >> target/pages/api/index.html
+          echo '<title>LayKit API Documentation</title>' >> target/pages/api/index.html
+          echo '<meta http-equiv="refresh" content="0; url=laykit/index.html">' >> target/pages/api/index.html
+          echo '</head><body>' >> target/pages/api/index.html
+          echo '<p>Redirecting to <a href="laykit/index.html">API documentation</a>...</p>' >> target/pages/api/index.html
+          echo '</body></html>' >> target/pages/api/index.html
           
           # Create .nojekyll file to disable Jekyll processing
           touch target/pages/.nojekyll
