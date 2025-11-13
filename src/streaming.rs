@@ -228,7 +228,7 @@ impl<R: Read + Seek> StreamingGDSIIReader<R> {
     }
 
     fn read_elements(&mut self) -> Result<Vec<GDSElement>, Box<dyn std::error::Error>> {
-        let mut elements = Vec::new();
+        let elements = Vec::new();
 
         loop {
             let mut header = [0u8; 4];
