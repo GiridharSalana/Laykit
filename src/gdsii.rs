@@ -586,7 +586,7 @@ impl GDSIIFile {
 
         *cursor += 4;
 
-        let data_length = if length >= 4 { length - 4 } else { 0 };
+        let data_length = length.saturating_sub(4);
         if *cursor + data_length > buffer.len() {
             return Err("Incomplete record data".into());
         }
@@ -719,7 +719,7 @@ impl GDSIIFile {
     }
 
     fn parse_xy(data: &[u8]) -> Result<Vec<(i32, i32)>, Box<dyn std::error::Error>> {
-        if data.len() % 8 != 0 {
+        if !data.len().is_multiple_of(8) {
             return Err("Invalid XY data length".into());
         }
 
