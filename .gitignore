@@ -15,5 +15,8 @@
 *.gds
 *.oas
 
+# mdBook build output
+/book/build/
+
 # Keep Cargo.lock for binary crates, remove for libraries
 # Cargo.lock

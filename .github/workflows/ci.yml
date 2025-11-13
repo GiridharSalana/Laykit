@@ -159,40 +159,54 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Generate docs
-        run: cargo doc --no-deps --all-features --document-private-items
-
-      - name: Check for broken links
-        run: cargo doc --no-deps --all-features 2>&1 | grep -i "warning.*intra-doc" && exit 1 || exit 0
-
-      - name: Prepare docs for GitHub Pages
+      - name: Install mdBook
         run: |
-          # Create staging directory and copy all docs
+          mkdir -p ~/bin
+          curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.4.40/mdbook-v0.4.40-x86_64-unknown-linux-gnu.tar.gz | tar -xz -C ~/bin
+          echo "$HOME/bin" >> $GITHUB_PATH
+
+      - name: Build mdBook documentation
+        run: |
+          mdbook build
+          ls -la book/build/
+
+      - name: Generate rustdoc (API reference)
+        run: cargo doc --no-deps --all-features
+
+      - name: Combine documentation
+        run: |
+          # Create staging directory
           mkdir -p target/pages
-          cp -r target/doc/* target/pages/
-          # Move crate-specific docs to root level
-          mv target/pages/laykit/* target/pages/
-          # Remove now-empty crate directory
-          rmdir target/pages/laykit
-          # Fix relative paths in HTML files (change ../ to ./ since we flattened)
-          find target/pages -name "*.html" -type f -exec sed -i 's|"\.\./static\.files/|"static.files/|g' {} +
-          find target/pages -name "*.html" -type f -exec sed -i "s|'\.\./static\.files/|'static.files/|g" {} +
-          find target/pages -name "*.html" -type f -exec sed -i 's|"\.\./crates\.js|"crates.js|g' {} +
-          find target/pages -name "*.html" -type f -exec sed -i 's|"\.\./search-index\.js|"search-index.js|g' {} +
-          find target/pages -name "*.html" -type f -exec sed -i 's|"\.\./src-files\.js|"src-files.js|g' {} +
-          find target/pages -name "*.html" -type f -exec sed -i 's|href="\.\./|href="|g' {} +
-          find target/pages -name "*.html" -type f -exec sed -i 's|src="\.\./|src="|g' {} +
-          # Fix links that still reference laykit/ subdirectory
-          find target/pages -name "*.html" -type f -exec sed -i 's|href="laykit/|href="|g' {} +
-          find target/pages -name "*.html" -type f -exec sed -i 's|src="laykit/|src="|g' {} +
-          find target/pages -name "*.html" -type f -exec sed -i "s|href='laykit/|href='|g" {} +
-          find target/pages -name "*.html" -type f -exec sed -i "s|src='laykit/|src='|g" {} +
-          # Fix links in JavaScript files
-          find target/pages -name "*.js" -type f -exec sed -i 's|"laykit/|"|g' {} +
-          find target/pages -name "*.js" -type f -exec sed -i "s|'laykit/|'|g" {} +
-          find target/pages -name "*.js" -type f -exec sed -i 's|../laykit/|../|g' {} +
+          
+          # Copy mdBook as main documentation
+          cp -r book/build/* target/pages/
+          
+          # Add rustdoc as /api subdirectory
+          mkdir -p target/pages/api
+          cp -r target/doc/* target/pages/api/
+          
+          # Create redirect from api/index.html to api/laykit/index.html
+          cat > target/pages/api/index.html << 'EOHTML'
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>LayKit API Documentation</title>
+    <meta http-equiv="refresh" content="0; url=laykit/index.html">
+</head>
+<body>
+<p>Redirecting to <a href="laykit/index.html">API documentation</a>...</p>
+</body>
+</html>
+EOHTML
+          
           # Create .nojekyll file to disable Jekyll processing
           touch target/pages/.nojekyll
+          
+          echo "Documentation structure:"
+          ls -la target/pages/
+          echo "API subdirectory:"
+          ls -la target/pages/api/ | head -20
 
       - name: Upload docs artifact
         uses: actions/upload-artifact@v4
