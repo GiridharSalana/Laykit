@@ -182,6 +182,15 @@ jobs:
           find target/pages -name "*.html" -type f -exec sed -i 's|"\.\./src-files\.js|"src-files.js|g' {} +
           find target/pages -name "*.html" -type f -exec sed -i 's|href="\.\./|href="|g' {} +
           find target/pages -name "*.html" -type f -exec sed -i 's|src="\.\./|src="|g' {} +
+          # Fix links that still reference laykit/ subdirectory
+          find target/pages -name "*.html" -type f -exec sed -i 's|href="laykit/|href="|g' {} +
+          find target/pages -name "*.html" -type f -exec sed -i 's|src="laykit/|src="|g' {} +
+          find target/pages -name "*.html" -type f -exec sed -i "s|href='laykit/|href='|g" {} +
+          find target/pages -name "*.html" -type f -exec sed -i "s|src='laykit/|src='|g" {} +
+          # Fix links in JavaScript files
+          find target/pages -name "*.js" -type f -exec sed -i 's|"laykit/|"|g' {} +
+          find target/pages -name "*.js" -type f -exec sed -i "s|'laykit/|'|g" {} +
+          find target/pages -name "*.js" -type f -exec sed -i 's|../laykit/|../|g' {} +
           # Create .nojekyll file to disable Jekyll processing
           touch target/pages/.nojekyll
 
