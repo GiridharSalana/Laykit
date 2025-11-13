@@ -2,9 +2,9 @@
 document.addEventListener('DOMContentLoaded', function() {
     const menuTitle = document.querySelector('.menu-title');
     if (menuTitle) {
-        // Wrap the title text in a link to the home page
+        // Wrap the title text in a link to the documentation home
         const titleText = menuTitle.textContent;
-        menuTitle.innerHTML = '<a href="/">' + titleText + '</a>';
+        menuTitle.innerHTML = '<a href="/laykit/">' + titleText + '</a>';
     }
     
     // Start with sidebar collapsed
