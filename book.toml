@@ -17,6 +17,7 @@ edit-url-template = "https://github.com/giridharsalana/laykit/edit/main/{path}"
 site-url = "https://giridharsalana.github.io/laykit/"
 cname = "giridharsalana.github.io"
 additional-css = ["book/theme/custom.css"]
+additional-js = ["book/theme/custom.js"]
 
 [output.html.fold]
 enable = true
