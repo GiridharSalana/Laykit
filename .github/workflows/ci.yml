@@ -45,9 +45,6 @@ jobs:
       - name: Run cargo tests
         run: cargo test --all-features --verbose
 
-      - name: Build release binary
-        run: cargo build --release
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -60,8 +57,10 @@ jobs:
       - name: Run gdstk cross-validation tests
         run: |
           chmod +x tests/gdstk_validation.py
-          chmod +x tests/run_all_tests.sh
-          cd tests && python3 gdstk_validation.py
+          python3 tests/gdstk_validation.py
+
+      - name: Build release binary
+        run: cargo build --release
 
       - name: Upload test results
         if: failure()
