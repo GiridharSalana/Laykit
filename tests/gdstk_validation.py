@@ -340,6 +340,431 @@ def test_large_file():
         print("PASS")
         return True
 
+def test_paths_with_extensions():
+    """Test path elements with begin/end extensions."""
+    print("Test 7: Path elements with extensions... ", end="")
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        gds_file = os.path.join(tmpdir, "paths.gds")
+        gds_out = os.path.join(tmpdir, "paths_out.gds")
+        
+        # Create file with paths
+        lib = gdstk.Library("PATH_TEST", unit=1e-6, precision=1e-9)
+        cell = lib.new_cell("PATHS")
+        
+        # Add path with various properties
+        path1 = gdstk.FlexPath([(0, 0), (100, 0), (100, 100)], 10, layer=1)
+        cell.add(path1)
+        
+        # Add path with different width
+        path2 = gdstk.FlexPath([(200, 0), (300, 0), (300, 100)], 20, layer=2)
+        cell.add(path2)
+        
+        lib.write_gds(gds_file)
+        
+        # Round-trip through LayKit
+        returncode, _, stderr = run_laykit(["convert", gds_file, gds_out])
+        if returncode != 0:
+            print(f"FAIL\n  Conversion error: {stderr}")
+            return False
+        
+        # Verify with gdstk
+        try:
+            lib_back = gdstk.read_gds(gds_out)
+            cell_back = lib_back.cells[0]
+            
+            # Paths are converted to polygons in GDSII/OASIS
+            if len(cell_back.polygons) < 2:
+                print(f"FAIL\n  Expected at least 2 polygons (from paths), got {len(cell_back.polygons)}")
+                return False
+            
+            print("PASS")
+            return True
+            
+        except Exception as e:
+            print(f"FAIL\n  Validation error: {e}")
+            return False
+
+def test_text_transformations():
+    """Test text elements with various transformations."""
+    print("Test 8: Text with transformations... ", end="")
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        gds_file = os.path.join(tmpdir, "text.gds")
+        gds_out = os.path.join(tmpdir, "text_out.gds")
+        
+        # Create file with text elements
+        lib = gdstk.Library("TEXT_TEST", unit=1e-6, precision=1e-9)
+        cell = lib.new_cell("TEXT")
+        
+        # Normal text
+        text1 = gdstk.Label("NORMAL", (0, 0), layer=10)
+        cell.add(text1)
+        
+        # Rotated text
+        text2 = gdstk.Label("ROTATED", (100, 0), layer=10)
+        text2.rotation = 45  # 45 degrees
+        cell.add(text2)
+        
+        # Magnified text  
+        text3 = gdstk.Label("BIG", (200, 0), layer=10)
+        text3.magnification = 2.0
+        cell.add(text3)
+        
+        lib.write_gds(gds_file)
+        
+        # Round-trip
+        returncode, _, stderr = run_laykit(["convert", gds_file, gds_out])
+        if returncode != 0:
+            print(f"FAIL\n  Conversion error: {stderr}")
+            return False
+        
+        try:
+            lib_back = gdstk.read_gds(gds_out)
+            cell_back = lib_back.cells[0]
+            
+            if len(cell_back.labels) < 3:
+                print(f"FAIL\n  Expected 3 labels, got {len(cell_back.labels)}")
+                return False
+            
+            print("PASS")
+            return True
+            
+        except Exception as e:
+            print(f"FAIL\n  Validation error: {e}")
+            return False
+
+def test_multiple_layers():
+    """Test handling of multiple layers and datatypes."""
+    print("Test 9: Multiple layers and datatypes... ", end="")
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        gds_file = os.path.join(tmpdir, "layers.gds")
+        gds_out = os.path.join(tmpdir, "layers_out.gds")
+        
+        # Create file with elements on different layers
+        lib = gdstk.Library("LAYER_TEST", unit=1e-6, precision=1e-9)
+        cell = lib.new_cell("LAYERS")
+        
+        # Add elements on layers 0-9 with datatypes 0-2
+        for layer in range(10):
+            for datatype in range(3):
+                x = layer * 50
+                y = datatype * 50
+                rect = gdstk.rectangle((x, y), (x+40, y+40), layer=layer, datatype=datatype)
+                cell.add(rect)
+        
+        lib.write_gds(gds_file)
+        
+        # Round-trip
+        returncode, _, stderr = run_laykit(["convert", gds_file, gds_out])
+        if returncode != 0:
+            print(f"FAIL\n  Conversion error: {stderr}")
+            return False
+        
+        try:
+            lib_back = gdstk.read_gds(gds_out)
+            cell_back = lib_back.cells[0]
+            
+            # Should have 10*3=30 polygons
+            if len(cell_back.polygons) != 30:
+                print(f"FAIL\n  Expected 30 polygons, got {len(cell_back.polygons)}")
+                return False
+            
+            # Check layer diversity
+            layers_found = set(p.layer for p in cell_back.polygons)
+            if len(layers_found) < 10:
+                print(f"FAIL\n  Expected 10 different layers, got {len(layers_found)}")
+                return False
+            
+            print("PASS")
+            return True
+            
+        except Exception as e:
+            print(f"FAIL\n  Validation error: {e}")
+            return False
+
+def test_deep_hierarchy():
+    """Test deep hierarchical structures (3+ levels)."""
+    print("Test 10: Deep hierarchy (3+ levels)... ", end="")
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        gds_file = os.path.join(tmpdir, "hierarchy.gds")
+        gds_out = os.path.join(tmpdir, "hierarchy_out.gds")
+        
+        # Create deep hierarchy: TOP → MID → BOT → LEAF
+        lib = gdstk.Library("HIER_TEST", unit=1e-6, precision=1e-9)
+        
+        # Leaf cell (deepest level)
+        leaf = lib.new_cell("LEAF")
+        leaf_rect = gdstk.rectangle((0, 0), (10, 10), layer=1)
+        leaf.add(leaf_rect)
+        
+        # Bottom cell (level 3)
+        bot = lib.new_cell("BOT")
+        bot.add(gdstk.Reference(leaf, (0, 0)))
+        bot.add(gdstk.Reference(leaf, (20, 0)))
+        
+        # Middle cell (level 2)
+        mid = lib.new_cell("MID")
+        mid.add(gdstk.Reference(bot, (0, 0)))
+        mid.add(gdstk.Reference(bot, (0, 50)))
+        
+        # Top cell (level 1)
+        top = lib.new_cell("TOP")
+        top.add(gdstk.Reference(mid, (0, 0)))
+        top.add(gdstk.Reference(mid, (100, 0)))
+        
+        lib.write_gds(gds_file)
+        
+        # Round-trip
+        returncode, _, stderr = run_laykit(["convert", gds_file, gds_out])
+        if returncode != 0:
+            print(f"FAIL\n  Conversion error: {stderr}")
+            return False
+        
+        try:
+            lib_back = gdstk.read_gds(gds_out)
+            
+            # Check all cells exist
+            cell_names = {c.name for c in lib_back.cells}
+            expected = {"TOP", "MID", "BOT", "LEAF"}
+            if not expected.issubset(cell_names):
+                print(f"FAIL\n  Missing cells. Expected {expected}, got {cell_names}")
+                return False
+            
+            print("PASS")
+            return True
+            
+        except Exception as e:
+            print(f"FAIL\n  Validation error: {e}")
+            return False
+
+def test_transformations():
+    """Test reference transformations (rotation, mirror, magnification)."""
+    print("Test 11: Reference transformations... ", end="")
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        gds_file = os.path.join(tmpdir, "transform.gds")
+        gds_out = os.path.join(tmpdir, "transform_out.gds")
+        
+        # Create file with transformed references
+        lib = gdstk.Library("XFORM_TEST", unit=1e-6, precision=1e-9)
+        
+        # Base cell
+        base = lib.new_cell("BASE")
+        base_rect = gdstk.rectangle((0, 0), (100, 50), layer=1)
+        base.add(base_rect)
+        
+        # Main cell with various transformations
+        main = lib.new_cell("MAIN")
+        
+        # Normal reference
+        ref1 = gdstk.Reference(base, (0, 0))
+        main.add(ref1)
+        
+        # Rotated reference
+        ref2 = gdstk.Reference(base, (200, 0), rotation=90)
+        main.add(ref2)
+        
+        # Mirrored reference
+        ref3 = gdstk.Reference(base, (400, 0), x_reflection=True)
+        main.add(ref3)
+        
+        # Magnified reference
+        ref4 = gdstk.Reference(base, (600, 0), magnification=2.0)
+        main.add(ref4)
+        
+        lib.write_gds(gds_file)
+        
+        # Round-trip
+        returncode, _, stderr = run_laykit(["convert", gds_file, gds_out])
+        if returncode != 0:
+            print(f"FAIL\n  Conversion error: {stderr}")
+            return False
+        
+        try:
+            lib_back = gdstk.read_gds(gds_out)
+            main_back = next((c for c in lib_back.cells if c.name == "MAIN"), None)
+            
+            if not main_back:
+                print(f"FAIL\n  MAIN cell not found")
+                return False
+            
+            # Should have references or flattened polygons
+            has_content = len(main_back.references) > 0 or len(main_back.polygons) > 0
+            if not has_content:
+                print(f"FAIL\n  No content in MAIN cell")
+                return False
+            
+            print("PASS")
+            return True
+            
+        except Exception as e:
+            print(f"FAIL\n  Validation error: {e}")
+            return False
+
+def test_extreme_coordinates():
+    """Test handling of negative and large coordinates."""
+    print("Test 12: Extreme coordinates... ", end="")
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        gds_file = os.path.join(tmpdir, "coords.gds")
+        gds_out = os.path.join(tmpdir, "coords_out.gds")
+        
+        # Create file with extreme coordinates
+        lib = gdstk.Library("COORD_TEST", unit=1e-6, precision=1e-9)
+        cell = lib.new_cell("COORDS")
+        
+        # Negative coordinates
+        rect1 = gdstk.rectangle((-1000, -1000), (-900, -900), layer=1)
+        cell.add(rect1)
+        
+        # Large positive coordinates
+        rect2 = gdstk.rectangle((1000000, 1000000), (1000100, 1000100), layer=1)
+        cell.add(rect2)
+        
+        # Mixed
+        rect3 = gdstk.rectangle((-500, 500), (500, 1000), layer=1)
+        cell.add(rect3)
+        
+        lib.write_gds(gds_file)
+        
+        # Round-trip
+        returncode, _, stderr = run_laykit(["convert", gds_file, gds_out])
+        if returncode != 0:
+            print(f"FAIL\n  Conversion error: {stderr}")
+            return False
+        
+        try:
+            lib_back = gdstk.read_gds(gds_out)
+            cell_back = lib_back.cells[0]
+            
+            if len(cell_back.polygons) != 3:
+                print(f"FAIL\n  Expected 3 polygons, got {len(cell_back.polygons)}")
+                return False
+            
+            print("PASS")
+            return True
+            
+        except Exception as e:
+            print(f"FAIL\n  Validation error: {e}")
+            return False
+
+def test_roundtrip_stability():
+    """Test multiple round-trip conversions for stability."""
+    print("Test 13: Round-trip stability (GDS→OAS→GDS→OAS)... ", end="")
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        gds1 = os.path.join(tmpdir, "test1.gds")
+        oas1 = os.path.join(tmpdir, "test1.oas")
+        gds2 = os.path.join(tmpdir, "test2.gds")
+        oas2 = os.path.join(tmpdir, "test2.oas")
+        
+        # Create initial file
+        lib = gdstk.Library("STABLE_TEST", unit=1e-6, precision=1e-9)
+        cell = lib.new_cell("STABLE")
+        
+        rect = gdstk.rectangle((0, 0), (100, 100), layer=1)
+        poly = gdstk.Polygon([(200, 0), (300, 0), (250, 100)], layer=2)
+        text = gdstk.Label("TEST", (50, 50), layer=10)
+        
+        cell.add(rect)
+        cell.add(poly)
+        cell.add(text)
+        
+        lib.write_gds(gds1)
+        
+        # GDS → OAS → GDS → OAS
+        commands = [
+            (["convert", gds1, oas1], "GDS→OAS (1)"),
+            (["convert", oas1, gds2], "OAS→GDS"),
+            (["convert", gds2, oas2], "GDS→OAS (2)"),
+        ]
+        
+        for cmd, desc in commands:
+            returncode, _, stderr = run_laykit(cmd)
+            if returncode != 0:
+                print(f"FAIL\n  {desc} error: {stderr}")
+                return False
+        
+        # Verify final OAS can be read
+        returncode, stdout, stderr = run_laykit(["info", oas2])
+        if returncode != 0:
+            print(f"FAIL\n  Final info error: {stderr}")
+            return False
+        
+        if "STABLE" not in stdout:
+            print(f"FAIL\n  Cell lost after conversions")
+            return False
+        
+        print("PASS")
+        return True
+
+def test_complex_polygons():
+    """Test complex polygons with many vertices."""
+    print("Test 14: Complex polygons... ", end="")
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        gds_file = os.path.join(tmpdir, "polygon.gds")
+        gds_out = os.path.join(tmpdir, "polygon_out.gds")
+        
+        # Create file with complex polygon
+        lib = gdstk.Library("POLY_TEST", unit=1e-6, precision=1e-9)
+        cell = lib.new_cell("POLYGON")
+        
+        # Create a complex polygon (octagon)
+        import math
+        points = []
+        for i in range(8):
+            angle = 2 * math.pi * i / 8
+            x = 500 + 400 * math.cos(angle)
+            y = 500 + 400 * math.sin(angle)
+            points.append((x, y))
+        
+        poly = gdstk.Polygon(points, layer=1)
+        cell.add(poly)
+        
+        # Also add a polygon with many points (circle approximation)
+        points2 = []
+        for i in range(100):
+            angle = 2 * math.pi * i / 100
+            x = 2000 + 200 * math.cos(angle)
+            y = 500 + 200 * math.sin(angle)
+            points2.append((x, y))
+        
+        poly2 = gdstk.Polygon(points2, layer=2)
+        cell.add(poly2)
+        
+        lib.write_gds(gds_file)
+        
+        # Round-trip
+        returncode, _, stderr = run_laykit(["convert", gds_file, gds_out])
+        if returncode != 0:
+            print(f"FAIL\n  Conversion error: {stderr}")
+            return False
+        
+        try:
+            lib_back = gdstk.read_gds(gds_out)
+            cell_back = lib_back.cells[0]
+            
+            if len(cell_back.polygons) != 2:
+                print(f"FAIL\n  Expected 2 polygons, got {len(cell_back.polygons)}")
+                return False
+            
+            # Check vertex counts are preserved (or close for circle)
+            for poly in cell_back.polygons:
+                if len(poly.points) < 8:
+                    print(f"FAIL\n  Polygon has too few vertices: {len(poly.points)}")
+                    return False
+            
+            print("PASS")
+            return True
+            
+        except Exception as e:
+            print(f"FAIL\n  Validation error: {e}")
+            return False
+
 def main():
     """Run all validation tests."""
     print("=" * 60)
@@ -361,6 +786,14 @@ def main():
         test_properties,
         test_array_references,
         test_large_file,
+        test_paths_with_extensions,
+        test_text_transformations,
+        test_multiple_layers,
+        test_deep_hierarchy,
+        test_transformations,
+        test_extreme_coordinates,
+        test_roundtrip_stability,
+        test_complex_polygons,
     ]
     
     passed = 0

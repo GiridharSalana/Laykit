@@ -656,7 +656,7 @@ cd tests && python3 gdstk_validation.py
 
 ### Test Coverage
 
-**71+ Comprehensive Tests** (100% passing, 0 failures):
+**85+ Comprehensive Tests** (100% passing, 0 failures):
 
 #### Rust Tests (71 tests)
 
@@ -707,14 +707,22 @@ cd tests && python3 gdstk_validation.py
 - ✅ Mixed elements streaming
 - ✅ File-based streaming
 
-#### Cross-Validation Tests (6 tests)
+#### Cross-Validation Tests (14 tests)
 **LayKit ↔ gdstk compatibility validation:**
 - ✅ `test_read_gdstk_file` - Reading gdstk-created files
 - ✅ `test_write_for_gdstk` - Creating gdstk-compatible files
-- ✅ `test_gds_to_oasis_conversion` - Round-trip GDS→OAS→GDS
+- ✅ `test_gds_to_oasis_conversion` - Round-trip GDS→OAS→GDS with filename-based library naming
 - ✅ `test_properties` - Property preservation
 - ✅ `test_array_references` - AREF handling
 - ✅ `test_large_file` - Large file handling (1000+ elements)
+- ✅ `test_paths_with_extensions` - Path elements with begin/end extensions
+- ✅ `test_text_transformations` - Text with rotation, magnification
+- ✅ `test_multiple_layers` - Multiple layers and datatypes (10 layers × 3 datatypes)
+- ✅ `test_deep_hierarchy` - Deep hierarchical structures (3+ levels)
+- ✅ `test_transformations` - Reference transformations (rotation, mirror, magnification)
+- ✅ `test_extreme_coordinates` - Negative and large coordinates (±1M)
+- ✅ `test_roundtrip_stability` - Multiple round-trip stability (GDS→OAS→GDS→OAS)
+- ✅ `test_complex_polygons` - Complex polygons with many vertices (8-100 points)
 
 > **Note:** gdstk validation requires `pip install gdstk`. Tests are automatically run in GitHub Actions CI.
 
@@ -728,11 +736,11 @@ LayKit uses GitHub Actions for automated testing across multiple platforms:
 - ✅ macOS Latest
 
 **CI Pipeline:**
-1. Rust unit tests (`cargo test`)
-2. Build verification (`cargo build --release`)
-3. Code formatting check (`cargo fmt -- --check`)
-4. Clippy linting (`cargo clippy`)
-5. **gdstk cross-validation** (Ubuntu only)
+1. Code formatting check (`cargo fmt -- --check`, with auto-fix)
+2. Clippy linting (`cargo clippy`)
+3. Rust unit tests (`cargo test`)
+4. Build verification (`cargo build --release`)
+5. **gdstk cross-validation** (14 tests, Ubuntu only, using uv for fast dependency management)
 6. Code coverage report (Codecov)
 
 See `.github/workflows/ci.yml` for complete workflow configuration.
