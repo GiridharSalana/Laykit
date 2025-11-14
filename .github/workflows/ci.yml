@@ -130,16 +130,13 @@ jobs:
       - name: Run doc tests
         run: cargo test --doc --verbose
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: '3.12'
 
-      - name: Install gdstk
-        run: pip install gdstk
-
       - name: Run gdstk cross-validation tests
-        run: python3 tests/gdstk_validation.py
+        run: uv run --with gdstk python tests/gdstk_validation.py
 
   build-binaries:
     name: Build Release Binaries
