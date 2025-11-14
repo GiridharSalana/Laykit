@@ -64,8 +64,38 @@ jobs:
         if: "!startsWith(github.ref, 'refs/tags/')"
         run: echo "Not a tag push, skipping version sync"
 
-  test:
+  clippy:
+    name: Clippy
     needs: sync-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  fmt:
+    name: Format
+    needs: clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+  test:
+    needs: fmt
     name: Test
     runs-on: ubuntu-latest
     steps:
@@ -100,39 +130,20 @@ jobs:
       - name: Run doc tests
         run: cargo test --doc --verbose
 
-  clippy:
-    name: Clippy
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          components: clippy
+          python-version: '3.11'
 
-      - name: Run clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: Install gdstk
+        run: pip install gdstk
 
-  fmt:
-    name: Format
-    needs: clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
-
-      - name: Check formatting
-        run: cargo fmt --all -- --check
+      - name: Run gdstk cross-validation tests
+        run: python3 tests/gdstk_validation.py
 
   build-binaries:
     name: Build Release Binaries
-    needs: fmt
+    needs: test
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ${{ matrix.os }}
     strategy:
